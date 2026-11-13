@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/reset", "destination": "/api/reset" },
+    { "source": "/slots", "destination": "/api/slots" },
+    { "source": "/bookings", "destination": "/api/bookings" },
+    { "source": "/bookings/(.*)", "destination": "/api/bookings/$1" }
+  ]
+}
