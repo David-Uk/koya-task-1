@@ -26,7 +26,7 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '100kb' }));
 
 // Reject malformed JSON with the same error envelope the spec uses.
-app.use((err, req, res, next) => {
+app.use((err, _req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({ error: 'invalid JSON format' });
   }
@@ -38,8 +38,7 @@ app.use((err, req, res, next) => {
 // ---------------------------------------------------------------------------
 const MONGODB_URI =
   process.env.MONGODB_URI ||
-  process.env.MONGO_ATLAS ||
-  'mongodb://127.0.0.1:27017/clinic-booking';
+  process.env.MONGO_ATLAS;
 
 let connectionPromise = null;
 
@@ -63,7 +62,7 @@ function connectToDatabase() {
 const dbReady = connectToDatabase();
 // Avoid an unhandled rejection when the initial connection fails; requests
 // still receive a 503 from the middleware below.
-dbReady.catch(() => {});
+dbReady.catch(() => { });
 
 // Keep indexes in sync so the partial unique index used for Level 3 and the
 // rate-limit index always exist, even on an older database.
@@ -84,7 +83,7 @@ mongoose.connection.once('open', async () => {
 });
 
 // Wait for the database before touching API routes (important on cold starts).
-app.use(async (req, res, next) => {
+app.use(async (_req, res, next) => {
   try {
     await dbReady;
     return next();
@@ -107,17 +106,17 @@ app.use('/api', apiRoutes);
 
 // Static frontend (the spec-compliant booking page).
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // JSON 404 for anything that is not an API route or a static asset.
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({ error: 'not found' });
 });
 
 // Central error handler: never leak stack traces to clients.
-app.use((err, req, res, next) => {
+app.use((err, _req, res, next) => {
   console.error('Unhandled server error:', err);
   if (res.headersSent) return next(err);
   return res.status(err.status || 500).json({ error: 'internal server error' });
